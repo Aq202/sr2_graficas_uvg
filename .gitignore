@@ -1,0 +1,4 @@
+/build
+/.vscode
+SDL2.dll
+/include

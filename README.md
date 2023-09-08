@@ -1,3 +1,3 @@
-# SR1 - Carga de Modelos
+# SR2 - Flat shading
 
 ![Resultado final](spaceship.png)

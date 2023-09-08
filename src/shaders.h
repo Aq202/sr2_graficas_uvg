@@ -2,8 +2,7 @@
 #include "fragment.h"
 
 Vertex vertexShader(const Vertex vertex, const Uniforms& uniforms) {
-   // Apply transformations to the input vertex using the matrices from the uniforms
-    glm::vec4 clipSpaceVertex = uniforms.projection * uniforms.view * uniforms.model * glm::vec4(vertex.position, 1.0f);
+     glm::vec4 clipSpaceVertex = uniforms.projection * uniforms.view * uniforms.model * glm::vec4(vertex.position, 1.0f);
 
     // Perspective divide
     glm::vec3 ndcVertex = glm::vec3(clipSpaceVertex) / clipSpaceVertex.w;
@@ -19,7 +18,6 @@ Vertex vertexShader(const Vertex vertex, const Uniforms& uniforms) {
     return Vertex{
         glm::vec3(screenVertex),
         transformedNormal,
-        // vertex.normal, // non transformed normal
     };
 }
 

@@ -1,6 +1,5 @@
 #include <SDL2/SDL.h>
 #include "framebuffer.h"
-#include "point.h"
 #include "triangle.h"
 #include "loadOBJ.h"
 #include <iostream>
@@ -11,9 +10,9 @@
 #include "camera.h"
 #include "glm/ext.hpp"
 
-void printVertex(glm::vec4 vertex)
+void printVertex(glm::vec3 vertex)
 {
-    SDL_Log("Vértice: (%f, %f, %f, %f)\n", vertex.x, vertex.y, vertex.z, vertex.w);
+    SDL_Log("Vértice: (%f, %f, %f)\n", vertex.x, vertex.y, vertex.z);
 }
 
 void renderBuffer(SDL_Renderer *renderer)
@@ -65,9 +64,9 @@ void render(std::vector<glm::vec3> &vertexes, Uniforms &uniforms)
 
     // vertex shader
     std::vector<Vertex> transformedVertexes;
-    for (int i = 0; i < vertexes.size() / 2; i++)
+    for (int i = 0; i < vertexes.size(); i+=2)
     {
-        Vertex vertex = {vertexes[i], vertexes[i * 2 + 1]};
+        Vertex vertex = {vertexes[i], vertexes[i + 1]};
         Vertex transformedVertex = vertexShader(vertex, uniforms);
         transformedVertexes.push_back(transformedVertex);
     }
@@ -81,10 +80,7 @@ void render(std::vector<glm::vec3> &vertexes, Uniforms &uniforms)
     {
         std::vector<Fragment> rasterizedTriangle = triangle(tr[0], tr[1], tr[2]);
 
-        for (const Fragment &fragment : rasterizedTriangle)
-        {
-            fragments.push_back(fragment);
-        }
+        fragments.insert(fragments.end(), rasterizedTriangle.begin(), rasterizedTriangle.end());
     }
 
     // fragment shader
@@ -93,48 +89,6 @@ void render(std::vector<glm::vec3> &vertexes, Uniforms &uniforms)
         const Fragment& shadedFragment = fragmentShader(fragment);
         point(shadedFragment);
     }
-
-    /*
-    const int scaleConst = 30;
-    glm::mat4 scale = glm::mat4(
-        scaleConst, 0, 0, 0,
-        0, scaleConst, 0, 0,
-        0, 0, scaleConst, 0,
-        0, 0, 0, 1
-    );
-
-    glm::mat4 translate = glm::mat4(
-        1, 0, 0, 400,
-        0, 1, 0, 450,
-        0, 0, 1, 0,
-        0, 0 ,0, 1
-    );
-
-    glm::mat4 ZRotate = glm::mat4(
-        glm::cos(pi), -glm::sin(pi), 0.0f, 0.0f,
-        glm::sin(pi), glm::cos(pi), 0.0f, 0.0f,
-        0.0f, 0.0f, 1.0f, 0.0f,
-        0.0f, 0.0f ,0.0f, 1.0f
-    );
-
-    glm::mat4 YRotate = glm::mat4(
-        glm::cos(rotation), 0.0f, glm::sin(rotation), 0.0f,
-        0.0f, 1.0f, 0.0f, 0.0f,
-        -glm::sin(rotation), 0.0f, glm::cos(rotation), 0.0f,
-        0.0f, 0.0f ,0.0f, 1.0f
-    );
-
-    rotation+=0.01;
-
-    for (int i = 0; i < vertexes.size(); i += 3)
-    {
-        glm::vec4 a = vertexes[i] * scale * YRotate * ZRotate * translate;
-        glm::vec4 b = vertexes[i + 1] * scale * YRotate * ZRotate * translate;
-        glm::vec4 c = vertexes[i + 2] * scale * YRotate * ZRotate * translate;
-
-        triangle( a,b,c);
-    }
-    */
 }
 
 glm::mat4 createViewportMatrix(size_t screenWidth, size_t screenHeight) {
@@ -162,7 +116,7 @@ int main(int argc, char *argv[])
     std::vector<glm::vec3> vertices;
     std::vector<glm::vec3> normals;
     std::vector<Face> faces;
-    if (!loadOBJ("D:\\proyectosProgra\\graficas\\sr2\\simplemodel.obj", vertices, normals, faces))
+    if (!loadOBJ("../models/model.obj", vertices, normals, faces))
     {
         return 0;
     }
@@ -171,17 +125,13 @@ int main(int argc, char *argv[])
 
     Uniforms uniforms;
 
-    glm::mat4 model = glm::mat4(1);
-    glm::mat4 view = glm::mat4(1);
-    glm::mat4 projection = glm::mat4(1);
-
     glm::vec3 translationVector(0.0f, 0.0f, 0.0f);
     float a = 45.0f;
     glm::vec3 rotationAxis(0.0f, 1.0f, 0.0f); // Rotate around the Y-axis
     glm::vec3 scaleFactor(1.0f, 1.0f, 1.0f);
 
     glm::mat4 translation = glm::translate(glm::mat4(1.0f), translationVector);
-    glm::mat4 scale = glm::scale(glm::mat4(0.5f), scaleFactor);
+    glm::mat4 scale = glm::scale(glm::mat4(1.0f), scaleFactor);
 
     // Initialize a Camera object
     Camera camera;
@@ -191,7 +141,7 @@ int main(int argc, char *argv[])
 
     // Projection matrix
     float fovInDegrees = 45.0f;
-    float aspectRatio = WINDOW_WIDTH / WINDOW_HEIGHT; // Assuming a screen resolution of 800x600
+    float aspectRatio =  static_cast<float>(WINDOW_WIDTH) /  static_cast<float>(WINDOW_HEIGHT); 
     float nearClip = 0.1f;
     float farClip = 100.0f;
     uniforms.projection = glm::perspective(glm::radians(fovInDegrees), aspectRatio, nearClip, farClip);
@@ -214,18 +164,18 @@ int main(int argc, char *argv[])
             }
         }
 
-        a += 0.1;
+        a += 2;
         glm::mat4 rotation = glm::rotate(glm::mat4(1.0f), glm::radians(a), rotationAxis);
 
         // Calculate the model matrix
-        uniforms.model = translation * rotation * scale;
+         uniforms.model = translation * rotation * scale;
 
-        // Create the view matrix using the Camera object
-        uniforms.view = glm::lookAt(
-            camera.cameraPosition, // The position of the camera
-            camera.targetPosition, // The point the camera is looking at
-            camera.upVector        // The up vector defining the camera's orientation
-        );
+        // // Create the view matrix using the Camera object
+         uniforms.view = glm::lookAt(
+             camera.cameraPosition, // The position of the camera
+             camera.targetPosition, // The point the camera is looking at
+             camera.upVector        // The up vector defining the camera's orientation
+         );
 
         clear();
         render(modelVertex, uniforms);
